@@ -35,6 +35,21 @@ if [[ ! -f "${MANIFEST}" ]]; then
   exit 1
 fi
 
+# Guard: ensure new versionCode is strictly higher than the previous release tag
+PREV_TAG="$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)"
+if [[ -n "${PREV_TAG}" ]]; then
+  PREV_CODE="$(git show "${PREV_TAG}:${MANIFEST}" 2>/dev/null \
+    | sed -n 's/.*android:versionCode="\([0-9]*\)".*/\1/p' || true)"
+  if [[ -n "${PREV_CODE}" && "${VERSION_CODE}" -le "${PREV_CODE}" ]]; then
+    echo "error: new versionCode ${VERSION_CODE} is not higher than previous tag ${PREV_TAG} (versionCode=${PREV_CODE})" >&2
+    echo "hint: this usually means the tag version was not bumped correctly" >&2
+    exit 1
+  fi
+  if [[ -n "${PREV_CODE}" ]]; then
+    echo "versionCode check passed: ${VERSION_CODE} > ${PREV_CODE} (${PREV_TAG})"
+  fi
+fi
+
 python3 - <<PY
 import re
 from pathlib import Path
