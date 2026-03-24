@@ -10,6 +10,7 @@
     "ANDROID_HOME": "/opt/adt/adt-bundle-linux-x86_64-20140702/sdk",
     "ANT": "/opt/adt/adt-bundle-linux-x86_64-20140702/eclipse/plugins/org.apache.ant_1.8.3.v201301120609/bin/ant"
   },
+  "initializeCommand": ["docker", "run", "--rm", "--privileged", "tonistiigi/binfmt", "--install", "amd64,386"],
   "postCreateCommand": "bash /workspace/.devcontainer/setup.sh",
   "customizations": {
     "vscode": {
