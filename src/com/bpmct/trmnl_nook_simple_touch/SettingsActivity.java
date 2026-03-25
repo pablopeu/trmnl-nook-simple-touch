@@ -81,23 +81,6 @@ public class SettingsActivity extends Activity {
         editParams.topMargin = 8;
         main.addView(editButton, editParams);
 
-        // Device Settings
-        main.addView(createSectionLabel("Device Settings"));
-        Button deviceSettingsButton = createGreyButton("Open Nook Settings App");
-        deviceSettingsButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                android.content.Intent nookIntent = new android.content.Intent();
-                nookIntent.setComponent(new android.content.ComponentName(
-                        "com.home.nmyshkin.nooksettings",
-                        "net.dinglisch.android.tasker.Kid"));
-                startActivity(nookIntent);
-            }
-        });
-        LinearLayout.LayoutParams deviceSettingsParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        deviceSettingsParams.topMargin = 6;
-        main.addView(deviceSettingsButton, deviceSettingsParams);
-
         // Display
         main.addView(createSectionLabel("Display"));
         allowSleepCheck = new CheckBox(this);
@@ -196,10 +179,10 @@ public class SettingsActivity extends Activity {
         wifiHint.setPadding(40, 0, 0, 0);
         main.addView(wifiHint);
 
-        // Debug Logs
-        main.addView(createSectionLabel("Debug Logs"));
+        // Debug & Device
+        main.addView(createSectionLabel("Debug & Device"));
         fileLoggingCheck = new CheckBox(this);
-        fileLoggingCheck.setText("Save to file");
+        fileLoggingCheck.setText("Save logs to file");
         fileLoggingCheck.setTextColor(0xFF000000);
         fileLoggingCheck.setChecked(ApiPrefs.isFileLoggingEnabled(this));
         main.addView(fileLoggingCheck);
@@ -221,6 +204,22 @@ public class SettingsActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         clearParams.topMargin = 6;
         main.addView(clearLogsButton, clearParams);
+
+        Button deviceSettingsButton = createGreyButton("Open Nook Settings App");
+        deviceSettingsButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                android.content.Intent nookIntent = new android.content.Intent();
+                nookIntent.setComponent(new android.content.ComponentName(
+                        "com.home.nmyshkin.nooksettings",
+                        "net.dinglisch.android.tasker.Kid"));
+                startActivity(nookIntent);
+            }
+        });
+        LinearLayout.LayoutParams deviceSettingsParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        deviceSettingsParams.topMargin = 6;
+        deviceSettingsParams.bottomMargin = 80;
+        main.addView(deviceSettingsButton, deviceSettingsParams);
 
         scroll.addView(main);
         rootLayout.addView(scroll, new FrameLayout.LayoutParams(
