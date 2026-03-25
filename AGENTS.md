@@ -106,23 +106,81 @@ tools/nook-adb.sh --ip <ip> set-preset saas
 - After boot completes, logs only go to Android logcat
 - `logE()` always shows on screen
 
+## Nook Device Details
+
+### Nook Settings App
+The device has a third-party settings app installed:
+- **Package**: `com.home.nmyshkin.nooksettings`
+- **Launchable activity**: `net.dinglisch.android.tasker.Kid`
+
+To launch it from Java code:
+```java
+Intent intent = new Intent();
+intent.setComponent(new ComponentName(
+    "com.home.nmyshkin.nooksettings",
+    "net.dinglisch.android.tasker.Kid"));
+startActivity(intent);
+```
+
+To launch via ADB:
+```bash
+adb -s <ip>:5555 shell am start -n com.home.nmyshkin.nooksettings/net.dinglisch.android.tasker.Kid
+```
+
+The TRMNL API credentials (Device ID + Token) are found inside this app under **Developer Perks**.
+
+### Finding the launchable activity of an installed APK
+```bash
+# Pull APK from device, then inspect with aapt
+adb -s <ip>:5555 pull $(adb -s <ip>:5555 shell pm path <pkg> | sed 's/package://') /tmp/app.apk
+aapt dump badging /tmp/app.apk | grep launchable
+```
+
+## Coder Agent Workflow
+
+### Running the devcontainer
+This repo has a `.devcontainer/` with a full Android SDK (Eclipse ADT bundle, Java 8, Ant).
+Use the `devcontainer` CLI (available at `/tmp/coder-script-data/bin/devcontainer`) to start it:
+
+```bash
+devcontainer up --workspace-folder /home/coder/trmnl-nook
+```
+
+The `initializeCommand` installs QEMU binfmt handlers for x86/x86_64 emulation (required because
+the ADT tools are 32-bit x86 binaries running on an ARM64 host). This must succeed before the
+build image can be used.
+
+Once up, exec commands into the container:
+```bash
+CONTAINER_ID=$(docker ps -q --filter "label=devcontainer.local_folder=/home/coder/trmnl-nook")
+docker exec "$CONTAINER_ID" bash -c "cd /workspace && tools/nook-adb.sh --ip <ip> build-install-run"
+```
+
+### INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES
+If `adb install -r` fails with this error, the existing APK was signed with a different debug key.
+The `adb uninstall` command may hang on this device. Use `adb install` (without `-r`) after the
+existing install is gone, or push + `pm install` directly:
+
+```bash
+# Uninstall (may hang — kill if needed)
+adb -s <ip>:5555 shell pm uninstall -k <package>
+
+# If uninstall hangs, the package may not be installed — just install fresh:
+adb -s <ip>:5555 install bin/trmnl-nook-simple-touch-debug.apk
+```
+
+### Pushing to upstream
+The upstream repo is `usetrmnl/trmnl-nook-simple-touch`. The Coder workspace user (`bpmct`) does
+not have direct write access. Workflow:
+
+1. Fork via `gh repo fork usetrmnl/trmnl-nook-simple-touch --clone=false`
+2. Push changes to a branch on the fork: `git push origin main:my-branch-name`
+3. Open PR: `gh pr create --repo usetrmnl/trmnl-nook-simple-touch --head bpmct:my-branch-name ...`
+
+Note: GitHub auto-syncs forks, so pushing directly to `main` on the fork will not create a PR
+(GitHub sees no diff). Always push to a named branch.
+
 ## Index
-
-### Worktree merge notes
-
-When `main` is checked out in another worktree, you can't switch it here. Use a worktree-safe patch:
-
-```
-# from this worktree
-
-git format-patch origin/main --stdout > /tmp/adb-device-ad7e.patch
-
-# then in the main worktree
-
-git apply /tmp/adb-device-ad7e.patch
-
-git commit -am "Merge adb-device-ad7e changes"
-```
 
 - `AGENTS/platform-constraints.md`
 - `AGENTS/build-tooling.md`
@@ -131,4 +189,3 @@ git commit -am "Merge adb-device-ad7e changes"
 - `AGENTS/sleep-wake-cycle.md`
 - `AGENTS/ux-patterns.md`
 - `AGENTS/references.md`
-

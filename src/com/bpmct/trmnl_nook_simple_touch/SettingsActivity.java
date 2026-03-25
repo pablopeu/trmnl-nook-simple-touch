@@ -65,7 +65,7 @@ public class SettingsActivity extends Activity {
         statusView = new TextView(this);
         statusView.setTextSize(12);
         statusView.setTextColor(0xFF444444);
-        statusView.setText(ApiPrefs.hasCredentials(this) ? "Configured" : "Not set - find in Device Settings → Developer Perks on trmnl.com");
+        statusView.setText(ApiPrefs.hasCredentials(this) ? "Configured" : "Not set");
         LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         statusParams.topMargin = 6;
@@ -81,10 +81,16 @@ public class SettingsActivity extends Activity {
         editParams.topMargin = 8;
         main.addView(editButton, editParams);
 
-        Button deviceSettingsButton = createGreyButton("Device Settings on trmnl.com");
+        // Device Settings
+        main.addView(createSectionLabel("Device Settings"));
+        Button deviceSettingsButton = createGreyButton("Open Nook Settings App");
         deviceSettingsButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://usetrmnl.com/devices")));
+                android.content.Intent nookIntent = new android.content.Intent();
+                nookIntent.setComponent(new android.content.ComponentName(
+                        "com.home.nmyshkin.nooksettings",
+                        "net.dinglisch.android.tasker.Kid"));
+                startActivity(nookIntent);
             }
         });
         LinearLayout.LayoutParams deviceSettingsParams = new LinearLayout.LayoutParams(
@@ -304,7 +310,7 @@ public class SettingsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (statusView != null) {
-            statusView.setText(ApiPrefs.hasCredentials(this) ? "Configured" : "Not set - find in Device Settings → Developer Perks on trmnl.com");
+            statusView.setText(ApiPrefs.hasCredentials(this) ? "Configured" : "Not set");
         }
         if (allowSleepCheck != null) allowSleepCheck.setChecked(ApiPrefs.isAllowSleep(this));
         if (fileLoggingCheck != null) fileLoggingCheck.setChecked(ApiPrefs.isFileLoggingEnabled(this));

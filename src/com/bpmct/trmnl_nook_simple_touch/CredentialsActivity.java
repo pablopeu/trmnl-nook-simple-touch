@@ -65,7 +65,7 @@ public class CredentialsActivity extends Activity {
         String currentBaseUrl = ApiPrefs.getApiBaseUrl(this);
         if (currentBaseUrl != null && currentBaseUrl.contains("usetrmnl.com")) {
             TextView credHint = new TextView(this);
-            credHint.setText("Find credentials in Device Settings → Developer Perks on trmnl.com");
+            credHint.setText("Find credentials in the Nook Settings app → Developer Perks");
             credHint.setTextSize(11);
             credHint.setTextColor(0xFF888888);
             LinearLayout.LayoutParams hintParams = new LinearLayout.LayoutParams(
@@ -74,14 +74,18 @@ public class CredentialsActivity extends Activity {
             inner.addView(credHint, hintParams);
 
             Button deviceSettingsLink = new Button(this);
-            deviceSettingsLink.setText("Open Device Settings on trmnl.com →");
+            deviceSettingsLink.setText("Open Nook Settings App →");
             deviceSettingsLink.setTextSize(11);
             deviceSettingsLink.setTextColor(0xFF0066CC);
             deviceSettingsLink.setBackground(null);
             deviceSettingsLink.setPadding(0, 0, 0, 0);
             deviceSettingsLink.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
-                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://usetrmnl.com/devices")));
+                    android.content.Intent nookIntent = new android.content.Intent();
+                    nookIntent.setComponent(new android.content.ComponentName(
+                            "com.home.nmyshkin.nooksettings",
+                            "net.dinglisch.android.tasker.Kid"));
+                    startActivity(nookIntent);
                 }
             });
             LinearLayout.LayoutParams linkParams = new LinearLayout.LayoutParams(
