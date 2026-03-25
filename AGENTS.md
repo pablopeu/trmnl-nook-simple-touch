@@ -156,6 +156,12 @@ CONTAINER_ID=$(docker ps -q --filter "label=devcontainer.local_folder=/home/code
 docker exec "$CONTAINER_ID" bash -c "cd /workspace && tools/nook-adb.sh --ip <ip> build-install-run"
 ```
 
+### API compatibility gotchas
+The Nook Simple Touch runs **Android 2.3 (API 10)**. Several commonly-used View methods don't exist:
+- `View.setBackground(Drawable)` — added API 16. Use `setBackgroundDrawable(Drawable)` instead.
+- `View.setBackground(null)` — same issue. Use `setBackgroundDrawable(null)`.
+- Always test against API 10; the Ant build target is API 20 so the compiler won't catch these — they crash at runtime with `NoSuchMethodError`.
+
 ### INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES
 If `adb install -r` fails with this error, the existing APK was signed with a different debug key.
 The `adb uninstall` command may hang on this device. Use `adb install` (without `-r`) after the
