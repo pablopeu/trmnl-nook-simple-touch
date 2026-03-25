@@ -205,21 +205,43 @@ public class SettingsActivity extends Activity {
         clearParams.topMargin = 6;
         main.addView(clearLogsButton, clearParams);
 
-        Button deviceSettingsButton = createGreyButton("Open Nook Settings App");
+        LinearLayout deviceRow = new LinearLayout(this);
+        deviceRow.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams deviceRowParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        deviceRowParams.topMargin = 6;
+        deviceRowParams.bottomMargin = 80;
+
+        Button deviceSettingsButton = createGreyButton("Nook Settings");
         deviceSettingsButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 android.content.Intent nookIntent = new android.content.Intent();
                 nookIntent.setComponent(new android.content.ComponentName(
                         "com.home.nmyshkin.nooksettings",
                         "net.dinglisch.android.tasker.Kid"));
+                nookIntent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
                 startActivity(nookIntent);
             }
         });
-        LinearLayout.LayoutParams deviceSettingsParams = new LinearLayout.LayoutParams(
+        deviceRow.addView(deviceSettingsButton);
+
+        Button appsDrawerButton = createGreyButton("Apps");
+        LinearLayout.LayoutParams appsParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        deviceSettingsParams.topMargin = 6;
-        deviceSettingsParams.bottomMargin = 80;
-        main.addView(deviceSettingsButton, deviceSettingsParams);
+        appsParams.leftMargin = 8;
+        appsDrawerButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                android.content.Intent appsIntent = new android.content.Intent();
+                appsIntent.setComponent(new android.content.ComponentName(
+                        "JakedUp.AppDrawer",
+                        "JakedUp.AppDrawer.Main"));
+                appsIntent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                startActivity(appsIntent);
+            }
+        });
+        deviceRow.addView(appsDrawerButton, appsParams);
+
+        main.addView(deviceRow, deviceRowParams);
 
         scroll.addView(main);
         rootLayout.addView(scroll, new FrameLayout.LayoutParams(
