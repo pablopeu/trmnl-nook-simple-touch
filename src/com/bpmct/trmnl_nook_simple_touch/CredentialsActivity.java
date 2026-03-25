@@ -77,7 +77,7 @@ public class CredentialsActivity extends Activity {
             deviceSettingsLink.setText("Open Nook Settings App →");
             deviceSettingsLink.setTextSize(11);
             deviceSettingsLink.setTextColor(0xFF0066CC);
-            deviceSettingsLink.setBackground(null);
+            deviceSettingsLink.setBackgroundDrawable(null);
             deviceSettingsLink.setPadding(0, 0, 0, 0);
             deviceSettingsLink.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
