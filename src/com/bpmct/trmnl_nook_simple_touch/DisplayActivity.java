@@ -71,6 +71,7 @@ public class DisplayActivity extends Activity {
     private TextView batteryView;
     private Button nextButton;
     private Button settingsButton;
+    private Button sleepButton;
     private TextView loadingStatusView;
     private RotateLayout imageRotateLayout;
     private boolean menuVisible = false;
@@ -291,6 +292,27 @@ public class DisplayActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT);
         settingsParams.leftMargin = 18;
         menuLayout.addView(settingsButton, settingsParams);
+
+        sleepButton = new Button(this);
+        sleepButton.setText("Sleep");
+        sleepButton.setTextColor(0xFF000000);
+        sleepButton.setClickable(true);
+        sleepButton.setOnTouchListener(new View.OnTouchListener() {
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    logD("menu: sleep tapped");
+                    hideMenu();
+                    sleepNow();
+                    return true;
+                }
+                return false;
+            }
+        });
+        LinearLayout.LayoutParams sleepParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        sleepParams.leftMargin = 18;
+        menuLayout.addView(sleepButton, sleepParams);
 
         loadingStatusView = new TextView(this);
         loadingStatusView.setTextColor(0xFF000000);
@@ -1112,6 +1134,7 @@ public class DisplayActivity extends Activity {
         if (batteryView != null) batteryView.setVisibility(View.GONE);
         if (nextButton != null) nextButton.setVisibility(showNextButton ? View.VISIBLE : View.GONE);
         if (settingsButton != null) settingsButton.setVisibility(View.GONE);
+        if (sleepButton != null) sleepButton.setVisibility(View.GONE);
         if (menuLayout != null && menuScrim != null) {
             menuLayout.setVisibility(View.VISIBLE);
             menuScrim.setVisibility(View.VISIBLE);
@@ -1120,12 +1143,13 @@ public class DisplayActivity extends Activity {
         forceFullRefresh();
     }
 
-    /** Restore dialog to Battery / Next / Settings. */
+    /** Restore dialog to Battery / Next / Settings / Sleep. */
     private void showMenuNormal() {
         if (loadingStatusView != null) loadingStatusView.setVisibility(View.GONE);
         if (batteryView != null) batteryView.setVisibility(View.VISIBLE);
         if (nextButton != null) nextButton.setVisibility(View.VISIBLE);
         if (settingsButton != null) settingsButton.setVisibility(View.VISIBLE);
+        if (sleepButton != null) sleepButton.setVisibility(View.VISIBLE);
         // No forceFullRefresh here - opening menu doesn't need e-ink flash
     }
 
@@ -1196,6 +1220,70 @@ public class DisplayActivity extends Activity {
                 forceFullRefresh();
             }
         }, 120);
+    }
+
+    /**
+     * Immediately put the device into sleep-ready state: cancel any pending sleep/refresh
+     * runnables, write the current screensaver image, schedule the next alarm, clear
+     * FLAG_KEEP_SCREEN_ON (so the NOOK can blank), and optionally turn WiFi off.
+     *
+     * This is safe to call regardless of the allow_sleep setting — the Sleep button
+     * does an immediate sleep rather than going through scheduleScreensaverThenSleep()
+     * so FLAG_KEEP_SCREEN_ON never blocks us.
+     */
+    private void sleepNow() {
+        logD("sleepNow: initiating manual sleep");
+
+        // Cancel any existing scheduled sleep / refresh so they don't race
+        if (pendingSleepRunnable != null) {
+            refreshHandler.removeCallbacks(pendingSleepRunnable);
+            pendingSleepRunnable = null;
+            logD("sleepNow: cancelled pending sleepRunnable");
+        }
+        if (refreshRunnable != null) {
+            refreshHandler.removeCallbacks(refreshRunnable);
+            logD("sleepNow: cancelled pending refreshRunnable");
+        }
+        cancelConnectivityWait();
+
+        // Write the current API image (or generic fallback) as screensaver so the
+        // NOOK shows something while asleep.
+        if (lastDisplayedImage != null) {
+            logD("sleepNow: writing last displayed image as screensaver");
+            writeScreenshotToScreensaver(lastDisplayedImage);
+        } else {
+            logD("sleepNow: no API image yet, writing generic screensaver");
+            writeGenericScreensaver();
+        }
+
+        // Schedule wake alarm so the next refresh fires on time.
+        // Use the current refreshMs minus the standard screensaver delay that was
+        // already skipped (we slept early), but never go negative.
+        long sleepMs = refreshMs - SCREENSAVER_DELAY_MS - WIFI_WARMUP_MS;
+        if (sleepMs < 0) sleepMs = 0;
+        long wakeTime = scheduleReload(sleepMs);
+        logD("sleepNow: alarm scheduled in " + (sleepMs / 1000L) + "s (wake at " + wakeTime + ")");
+
+        // Turn WiFi off to save power (same as the normal sleep path).
+        if (ApiPrefs.isAutoDisableWifi(this)) {
+            WifiManager wifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+            if (wifi != null && wifi.isWifiEnabled()) {
+                wifi.setWifiEnabled(false);
+                logD("sleepNow: WiFi disabled");
+            } else {
+                logD("sleepNow: WiFi already off or unavailable");
+            }
+        } else {
+            logD("sleepNow: auto-disable WiFi is OFF, leaving WiFi on");
+        }
+
+        // Clear FLAG_KEEP_SCREEN_ON so the NOOK screen timeout can fire and the
+        // device will blank normally. This is the key step — without it the screen
+        // stays on forever regardless of the screensaver.
+        logD("sleepNow: clearing keep-screen-awake flag, screen will blank on idle timeout");
+        setKeepScreenAwake(false);
+
+        logD("sleepNow: done — device will sleep when idle timeout fires");
     }
 
     private void flashEinkTransition() {
