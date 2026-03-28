@@ -117,27 +117,27 @@ public class SettingsActivity extends Activity {
         panelGeneral.addView(allowSleepCheck);
 
         sleepHint = new TextView(this);
-        sleepHint.setText("Set screensaver to TRMNL, sleep after 2 min");
+        sleepHint.setText("In Nook Settings: set screensaver to TRMNL with 2 min timeout");
         sleepHint.setTextSize(11);
         sleepHint.setTextColor(0xFF888888);
-        sleepHint.setPadding(40, 0, 0, 0);
+        sleepHint.setPadding(40, 0, 0, 8);
         sleepHint.setVisibility(allowSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
+        panelGeneral.addView(sleepHint);
 
         superSleepCheck = new CheckBox(this);
-        superSleepCheck.setText("Super sleep");
+        superSleepCheck.setText("Sleep on image load");
         superSleepCheck.setTextColor(0xFF000000);
         superSleepCheck.setChecked(ApiPrefs.isSuperSleep(this));
         superSleepCheck.setVisibility(allowSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
         panelGeneral.addView(superSleepCheck);
 
         final TextView superSleepHint = new TextView(this);
-        superSleepHint.setText("Sleep immediately after each new image loads");
+        superSleepHint.setText("Sleep immediately after a new image loads on a scheduled refresh (not manual Next)");
         superSleepHint.setTextSize(11);
         superSleepHint.setTextColor(0xFF888888);
         superSleepHint.setPadding(40, 0, 0, 0);
         superSleepHint.setVisibility(superSleepCheck.isChecked() && allowSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
         panelGeneral.addView(superSleepHint);
-        panelGeneral.addView(sleepHint);
 
         allowSleepCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
