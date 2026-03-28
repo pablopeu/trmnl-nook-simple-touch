@@ -117,40 +117,32 @@ public class SettingsActivity extends Activity {
         panelGeneral.addView(allowSleepCheck);
 
         sleepHint = new TextView(this);
-        sleepHint.setText("In Nook Settings: set screensaver to TRMNL with 2 min timeout");
+        sleepHint.setText("Saves battery. In Nook Settings: set screensaver to TRMNL with 2 min timeout.");
         sleepHint.setTextSize(11);
         sleepHint.setTextColor(0xFF888888);
         sleepHint.setPadding(40, 0, 0, 8);
-        sleepHint.setVisibility(allowSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
         panelGeneral.addView(sleepHint);
 
         superSleepCheck = new CheckBox(this);
-        superSleepCheck.setText("Sleep on image load");
+        superSleepCheck.setText("Aggressive sleep");
         superSleepCheck.setTextColor(0xFF000000);
         superSleepCheck.setChecked(ApiPrefs.isSuperSleep(this));
         superSleepCheck.setVisibility(allowSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
         panelGeneral.addView(superSleepCheck);
 
         final TextView superSleepHint = new TextView(this);
-        superSleepHint.setText("Sleep immediately after a new image loads on a scheduled refresh (not manual Next)");
+        superSleepHint.setText("Saves more battery. Sleeps immediately after each scheduled image refresh instead of waiting for screen timeout.");
         superSleepHint.setTextSize(11);
         superSleepHint.setTextColor(0xFF888888);
         superSleepHint.setPadding(40, 0, 0, 0);
-        superSleepHint.setVisibility(superSleepCheck.isChecked() && allowSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
+        superSleepHint.setVisibility(allowSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
         panelGeneral.addView(superSleepHint);
 
         allowSleepCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                sleepHint.setVisibility(isChecked ? View.VISIBLE : View.GONE);
                 superSleepCheck.setVisibility(isChecked ? View.VISIBLE : View.GONE);
-                superSleepHint.setVisibility(isChecked && superSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
-                flashRefresh();
-            }
-        });
-
-        superSleepCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 superSleepHint.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+                flashRefresh();
             }
         });
 
@@ -483,7 +475,7 @@ public class SettingsActivity extends Activity {
         if (allowSleepCheck != null) allowSleepCheck.setChecked(ApiPrefs.isAllowSleep(this));
         if (fileLoggingCheck != null) fileLoggingCheck.setChecked(ApiPrefs.isFileLoggingEnabled(this));
         if (giftModeCheck != null) giftModeCheck.setChecked(ApiPrefs.isGiftModeEnabled(this));
-        if (sleepHint != null) sleepHint.setVisibility(allowSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
+        if (sleepHint != null) sleepHint.setVisibility(View.VISIBLE);
         if (giftSettingsButton != null && giftModeCheck != null) {
             giftSettingsButton.setVisibility(giftModeCheck.isChecked() ? View.VISIBLE : View.GONE);
         }
