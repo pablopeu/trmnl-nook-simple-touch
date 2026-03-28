@@ -19,6 +19,7 @@ Questions or feedback? Please [open an issue](https://github.com/bpmct/trmnl-noo
 - [Device Settings](#device-settings)
 - [Features](#features)
 - [Deep Sleep Mode](#deep-sleep-mode)
+- [Aggressive Sleep](#aggressive-sleep)
 - [Frames and Cases](#frames-and-cases)
 - [Gift Mode](#gift-mode)
 - [Roadmap](#roadmap)
@@ -52,6 +53,7 @@ In the TRMNL Device settings, set the device type to "Nook Simple Touch" as the 
 - BYOD support for TRMNL and custom server URLs
 - Reports battery voltage and Wi-Fi signal strength
 - Deep sleep mode for 30+ day battery life
+- Aggressive sleep for maximum battery savings (benchmarking TBD)
 - Gift Mode for pre-configuring devices as gifts
 
 ## Deep Sleep Mode
@@ -62,6 +64,16 @@ To enable:
 1. In the app: Enable "Sleep between updates"
 2. In `Nook Settings → Display → Screensaver`: Set to "TRMNL" with 2-minute timeout
 3. In `Apps → Nook Touch Mod`: Enable "Hide Screensaver Banner"
+
+## Aggressive Sleep
+
+Aggressive sleep is an optional mode on top of deep sleep that puts the device to sleep immediately after each scheduled image refresh, rather than waiting for the screensaver timeout. This can further improve battery life, though benchmarking is still in progress — exact savings are TBD.
+
+To enable:
+1. First enable "Sleep between updates" (see [Deep Sleep Mode](#deep-sleep-mode))
+2. In the app: Settings → General → Enable "Aggressive sleep"
+
+You can also trigger a manual sleep at any time from Settings → System → "Sleep".
 
 ## Frames and Cases
 
