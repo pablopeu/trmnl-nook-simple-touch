@@ -1301,17 +1301,18 @@ public class DisplayActivity extends Activity {
             public void run() {
                 pendingScreenOffRunnable = null;
                 sleepPending = false;
-                logD("sleepNow: injecting KEYCODE_POWER to force screen off");
+                logD("sleepNow: writing mem to /sys/power/state to force screen off");
                 try {
-                    Runtime.getRuntime().exec(new String[]{"input", "keyevent", "26"});
-                    logD("sleepNow: KEYCODE_POWER injected ok");
+                    Runtime.getRuntime().exec(new String[]{"/system/bin/sh", "-c", "echo mem > /sys/power/state"});
+                    logD("sleepNow: /sys/power/state=mem ok");
                 } catch (Throwable t) {
-                    logW("sleepNow: KEYCODE_POWER inject failed: " + t);
+                    logW("sleepNow: /sys/power/state failed: " + t);
+                    // Fallback: try input keyevent 26
                     try {
-                        Runtime.getRuntime().exec(new String[]{"/system/bin/sh", "-c", "input keyevent 26"});
-                        logD("sleepNow: KEYCODE_POWER via sh ok");
+                        Runtime.getRuntime().exec(new String[]{"input", "keyevent", "26"});
+                        logD("sleepNow: KEYCODE_POWER fallback ok");
                     } catch (Throwable t2) {
-                        logW("sleepNow: sh fallback also failed: " + t2);
+                        logW("sleepNow: KEYCODE_POWER fallback also failed: " + t2);
                     }
                 }
                 logD("sleepNow: done");
