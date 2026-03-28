@@ -55,7 +55,7 @@ public class DisplayActivity extends Activity {
     /** When true, skip API and show generic on screen (for testing). When false, foreground = API image, screensaver file = generic. */
     private static final boolean USE_GENERIC_IMAGE = false;
     /** Delay after showing API image before writing screensaver and going to sleep (show picture, then screensaver, then sleep full interval). */
-    private static final long SCREENSAVER_DELAY_MS = 5 * 1000;
+    private static final long SCREENSAVER_DELAY_MS = 2 * 1000;
     private TextView contentView;
     private TextView logView;
     private ImageView imageView;
@@ -1303,7 +1303,7 @@ public class DisplayActivity extends Activity {
                 logD("sleepNow: done");
             }
         };
-        refreshHandler.postDelayed(pendingScreenOffRunnable, 5000);
+        refreshHandler.postDelayed(pendingScreenOffRunnable, 2000);
         logD("sleepNow: setup complete, screen-off in 5s (sleepPending=true)");
     }
 
@@ -1595,7 +1595,16 @@ public class DisplayActivity extends Activity {
                     a.forceFullRefresh();
                     a.logD("displayed image");
                     a.logD("next display in " + (a.refreshMs / 1000L) + "s");
-                    a.scheduleNextCycle();
+                    // Super Sleep: if enabled and this was a background (timer/alarm) fetch, sleep immediately
+                    if (ApiPrefs.isSuperSleep(a)
+                            && ApiPrefs.isAllowSleep(a)
+                            && !fromMenu
+                            && ("timer".equals(a.fetchReason) || "alarm".equals(a.fetchReason))) {
+                        a.logD("super sleep: sleeping immediately after image load");
+                        a.sleepNow();
+                    } else {
+                        a.scheduleNextCycle();
+                    }
                     int pct = getBatteryPercent(a);
                     if (pct >= 0) a.logD("Percent-Charged: " + pct);
                     int rssi = getWifiRssi(a);

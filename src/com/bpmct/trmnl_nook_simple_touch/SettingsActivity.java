@@ -25,6 +25,7 @@ public class SettingsActivity extends Activity {
     private static final int APP_ROTATION_DEGREES = 90;
     private TextView statusView;
     private CheckBox allowSleepCheck;
+    private CheckBox superSleepCheck;
     private CheckBox fileLoggingCheck;
     private CheckBox giftModeCheck;
     private Button giftSettingsButton;
@@ -121,12 +122,35 @@ public class SettingsActivity extends Activity {
         sleepHint.setTextColor(0xFF888888);
         sleepHint.setPadding(40, 0, 0, 0);
         sleepHint.setVisibility(allowSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
+
+        superSleepCheck = new CheckBox(this);
+        superSleepCheck.setText("Super sleep");
+        superSleepCheck.setTextColor(0xFF000000);
+        superSleepCheck.setChecked(ApiPrefs.isSuperSleep(this));
+        superSleepCheck.setVisibility(allowSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
+        panelGeneral.addView(superSleepCheck);
+
+        final TextView superSleepHint = new TextView(this);
+        superSleepHint.setText("Sleep immediately after each new image loads");
+        superSleepHint.setTextSize(11);
+        superSleepHint.setTextColor(0xFF888888);
+        superSleepHint.setPadding(40, 0, 0, 0);
+        superSleepHint.setVisibility(superSleepCheck.isChecked() && allowSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
+        panelGeneral.addView(superSleepHint);
         panelGeneral.addView(sleepHint);
 
         allowSleepCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 sleepHint.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+                superSleepCheck.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+                superSleepHint.setVisibility(isChecked && superSleepCheck.isChecked() ? View.VISIBLE : View.GONE);
                 flashRefresh();
+            }
+        });
+
+        superSleepCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                superSleepHint.setVisibility(isChecked ? View.VISIBLE : View.GONE);
             }
         });
 
@@ -298,15 +322,14 @@ public class SettingsActivity extends Activity {
             }
         });
         deviceRow.addView(appsDrawerButton, appsParams);
-        panelSystem.addView(deviceRow, deviceRowParams);
 
-        Button sleepNowButton = createGreyButton("Sleep Now");
+        Button sleepNowButton = createGreyButton("Sleep");
         LinearLayout.LayoutParams sleepNowParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        sleepNowParams.topMargin = 8;
+        sleepNowParams.leftMargin = 8;
         sleepNowButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                finish(); // return to DisplayActivity, which will call sleepNow() via intent
+                finish();
                 android.content.Intent i = new android.content.Intent(
                         SettingsActivity.this,
                         DisplayActivity.class);
@@ -315,7 +338,8 @@ public class SettingsActivity extends Activity {
                 startActivity(i);
             }
         });
-        panelSystem.addView(sleepNowButton, sleepNowParams);
+        deviceRow.addView(sleepNowButton, sleepNowParams);
+        panelSystem.addView(deviceRow, deviceRowParams);
 
         main.addView(panelSystem);
 
@@ -476,6 +500,7 @@ public class SettingsActivity extends Activity {
 
     private void saveDisplayPrefs() {
         if (allowSleepCheck != null) ApiPrefs.setAllowSleep(this, allowSleepCheck.isChecked());
+        ApiPrefs.setSuperSleep(this, allowSleepCheck != null && allowSleepCheck.isChecked() && superSleepCheck != null && superSleepCheck.isChecked());
         if (fileLoggingCheck != null) {
             boolean enabled = fileLoggingCheck.isChecked();
             ApiPrefs.setFileLoggingEnabled(this, enabled);
