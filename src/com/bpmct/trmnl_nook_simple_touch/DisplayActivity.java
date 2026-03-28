@@ -1301,17 +1301,14 @@ public class DisplayActivity extends Activity {
             public void run() {
                 pendingScreenOffRunnable = null;
                 sleepPending = false;
-                logD("sleepNow: calling PowerManager.goToSleep()");
+                logD("sleepNow: running su to write mem > /sys/power/state");
                 try {
-                    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-                    if (pm != null) {
-                        pm.goToSleep(SystemClock.uptimeMillis());
-                        logD("sleepNow: goToSleep() called ok");
-                    } else {
-                        logW("sleepNow: PowerManager is null");
-                    }
+                    Process p = Runtime.getRuntime().exec(
+                        new String[]{"/system/bin/su", "-c", "echo mem > /sys/power/state"});
+                    int exit = p.waitFor();
+                    logD("sleepNow: su exit=" + exit);
                 } catch (Throwable t) {
-                    logW("sleepNow: goToSleep() failed: " + t);
+                    logW("sleepNow: su failed: " + t);
                 }
                 logD("sleepNow: done");
             }
