@@ -16,7 +16,7 @@ Questions or feedback? Please [open an issue](https://github.com/bpmct/trmnl-noo
 
 - [Prerequisites](#prerequisites)
 - [Install](#install)
-  - [Easy Setup via nooks.bpmct.net](#easy-setup-via-nooksbpmctnet-recommended)
+  - [Easy Setup](#easy-setup-recommended)
   - [Manual Setup](#manual-setup)
 - [Device Settings](#device-settings)
 - [Features](#features)
@@ -35,11 +35,13 @@ Questions or feedback? Please [open an issue](https://github.com/bpmct/trmnl-noo
 
 ## Install
 
-### Easy Setup via nooks.bpmct.net (recommended)
+### Easy Setup (recommended)
 
-**[nooks.bpmct.net/manage/](https://nooks.bpmct.net/manage/)** is a browser-based setup wizard that installs the app and configures your NOOK over USB — no ADB installation required.
+The [web tool](https://nooks.bpmct.net/manage/) is a browser-based setup wizard that installs the app and configures your NOOK over USB — no ADB installation required.
 
 > **Requires Chrome or Edge.** WebUSB is not supported in Firefox or Safari.
+
+> **Prerequisites:** Your NOOK must be rooted first — see [Prerequisites](#prerequisites) above. Rooting via the [Phoenix Project](https://xdaforums.com/t/nst-g-the-phoenix-project.4673934/) (phase 4) and [ClockworkMod recovery](https://xdaforums.com/t/nst-g-the-phoenix-project.4673934/) is required before the web tool can connect.
 
 [![nooks.bpmct.net setup wizard](images/nooks-webapp.png)](https://nooks.bpmct.net/manage/)
 
@@ -51,7 +53,7 @@ The wizard walks you through five steps:
 4. **WiFi** — Scan for and connect to a WiFi network
 5. **Done** — Your NOOK is ready
 
-The webapp configures all required device settings automatically, including those listed in [Device Settings](#device-settings) below.
+The web tool configures all required device settings automatically, including those listed in [Device Settings](#device-settings) below.
 
 ---
 
@@ -71,7 +73,7 @@ After installing manually, you'll also need to configure [Device Settings](#devi
 
 In the TRMNL Device settings, set the device type to "Nook Simple Touch" as the TRMNL team was nice enough to add support for this device!
 
-The app and [nooks.bpmct.net](https://nooks.bpmct.net/manage/) both configure several Android system settings for the best experience. These are applied automatically by the setup wizard, but if you're setting up manually, here's what they do:
+The app and the [web tool](https://nooks.bpmct.net/manage/) both configure several Android system settings for the best experience. These are applied automatically by the setup wizard, but if you're setting up manually, here's what they do:
 
 | Setting | Value | Purpose |
 |---------|-------|---------|
