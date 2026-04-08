@@ -16,6 +16,8 @@ Questions or feedback? Please [open an issue](https://github.com/bpmct/trmnl-noo
 
 - [Prerequisites](#prerequisites)
 - [Install](#install)
+  - [Easy Setup](#easy-setup-recommended)
+  - [Manual Setup](#manual-setup)
 - [Device Settings](#device-settings)
 - [Features](#features)
 - [Deep Sleep Mode](#deep-sleep-mode)
@@ -32,17 +34,56 @@ Questions or feedback? Please [open an issue](https://github.com/bpmct/trmnl-noo
 - Buy a [TRMNL BYOD license](https://shop.usetrmnl.com/collections/frontpage/products/byod) and grab your SSID + API key from Developer Settings after login (or use your own server).
 
 ## Install
-- Download the APK from [GitHub Releases](https://github.com/bpmct/trmnl-nook-simple-touch/releases).
-- Connect the Nook Simple Touch over USB and copy the APK over.
-- Open the included `ES File Explorer` app.
-- In ES File Explorer: `Favorites -> "/" -> "media" -> "My Files".`
-- Tap the APK and install.
-- Connect your device to WiFi
-- Open the app and configure the device info
+
+### Easy Setup (recommended)
+
+I built [a web tool](https://nooks.bpmct.net/manage/) that handles the whole setup over USB — installs the app, configures settings, and gets you on WiFi, all from the browser. No ADB needed.
+
+> Requires Chrome or Edge (WebUSB). Your NOOK must be rooted first via the [Phoenix Project](https://xdaforums.com/t/nst-g-the-phoenix-project.4673934/) phase 4 before it'll show up.
+
+[![nooks.bpmct.net setup wizard](images/nooks-webapp.png)](https://nooks.bpmct.net/manage/)
+
+The wizard walks you through five steps:
+
+1. **Connect** — Plug in your NOOK via USB, then click "Connect Device" to open the browser's USB picker. If prompted on the NOOK screen, tap *Allow* to authorize the connection.
+2. **Checking** — Reads your device model, verifies the TRMNL app is installed (installing or updating it if needed), and applies any missing system settings automatically.
+3. **Configure TRMNL** — Sign up at trmnl.com, then enter the MAC address and Device API Key from your device's Developer Perks page. Self-hosted (BYOS) and gift mode are available under advanced options.
+4. **WiFi Setup** — If your NOOK is already on a network, this step confirms the connection and moves on. Otherwise, it scans for nearby networks and writes the credentials directly to the device.
+5. **Done** — Your NOOK is ready. Unplug the USB cable and manage plugins and settings at trmnl.com.
+
+The web tool configures all required device settings automatically, including those listed in [Device Settings](#device-settings) below.
+
+---
+
+### Manual Setup
+
+1. Download the APK from [GitHub Releases](https://github.com/bpmct/trmnl-nook-simple-touch/releases).
+2. Connect the Nook Simple Touch over USB and copy the APK over.
+3. Open the included `ES File Explorer` app.
+4. In ES File Explorer: `Favorites -> "/" -> "media" -> "My Files".`
+5. Tap the APK and install.
+6. Connect your device to WiFi.
+7. Open the app and configure the device info.
+
+After installing manually, you'll also need to configure [Device Settings](#device-settings).
 
 ## Device Settings
 
 In the TRMNL Device settings, set the device type to "Nook Simple Touch" as the TRMNL team was nice enough to add support for this device!
+
+The [web tool](https://nooks.bpmct.net/manage/) applies all of the settings below automatically. If you installed manually, configure each one by hand:
+
+| Where | Setting | Value | Purpose |
+|-------|---------|-------|----------|
+| `Nook Settings → Display → Screensaver` | Screensaver | TRMNL / 2 min timeout | Points the screensaver at the TRMNL image and ensures it activates for deep sleep |
+| `Apps → Nook Touch Mod` | Hide screensaver banner | Enabled | Hides the text overlay on the screensaver |
+| `Apps → Nook Touch Mod` | Disable drag to unlock | Enabled | Skips the drag-to-unlock gesture on screensaver wake |
+| `Apps → Nook Touch Mod` *(optional)* | Home button (short press) | Launches TRMNL app | Remaps the physical Home button to open TRMNL directly |
+| `Apps → Nook Touch Mod` *(optional)* | Home button (long press) | Opens App Drawer | Remaps long-press Home to the app drawer |
+| TRMNL app → Settings → General | Sleep between updates | Enabled | Enables deep sleep between refresh cycles |
+| TRMNL app → Settings → General | Aggressive sleep | Enabled | Sleeps immediately after each refresh rather than waiting for timeout |
+
+> **Note:** Nook Touch Mod settings require [Nook Mod Manager (NMM)](https://xdaforums.com/t/nst-g-the-phoenix-project.4673934/) to be installed (included in Phoenix Project phase 4). The Home button remapping rows are optional — the app works without them.
 
 ## Features
 
