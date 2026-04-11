@@ -106,6 +106,11 @@ public class DisplayActivity extends Activity {
 
         // Initialize file logging from saved preference
         FileLogger.setEnabled(ApiPrefs.isFileLoggingEnabled(this));
+        logD("onCreate pid=" + android.os.Process.myPid()
+                + " allow_sleep=" + ApiPrefs.isAllowSleep(this)
+                + " super_sleep=" + ApiPrefs.isSuperSleep(this)
+                + " auto_disable_wifi=" + ApiPrefs.isAutoDisableWifi(this)
+                + " allow_http=" + ApiPrefs.isAllowHttp(this));
 
         // Write the generic screensaver on first-ever launch so NOOK shows something
         // branded if it sleeps before any API image has been displayed.
@@ -372,6 +377,7 @@ public class DisplayActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        logD("onResume pid=" + android.os.Process.myPid() + " fetchInProgress=" + fetchInProgress);
         getWindow().setFlags(
                 WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -460,7 +466,14 @@ public class DisplayActivity extends Activity {
             @Override
             public void run() {
                 pendingConnectivityTimeoutRunnable = null;
-                logD("connectivity wait timed out");
+                WifiManager wm = (WifiManager) a.getSystemService(Context.WIFI_SERVICE);
+                String wifiDetail = "unknown";
+                if (wm != null) {
+                    wifiDetail = "enabled=" + wm.isWifiEnabled();
+                    WifiInfo wi = wm.getConnectionInfo();
+                    if (wi != null) wifiDetail += " ip=" + wi.getIpAddress() + " rssi=" + wi.getRssi();
+                }
+                logD("connectivity wait timed out after " + (CONNECTIVITY_MAX_WAIT_MS / 1000L) + "s wifi=" + wifiDetail);
                 logD("Ensure you are connected to WiFi. Press the home button and go into settings to configure.");
                 cancelConnectivityWait();
                 if (showErrorInMenu) {
@@ -551,6 +564,7 @@ public class DisplayActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        logD("onPause pid=" + android.os.Process.myPid() + " fetchInProgress=" + fetchInProgress);
         // Restore screen timeout whenever we leave — user is navigating around the device.
         try {
             android.provider.Settings.System.putInt(
@@ -560,6 +574,7 @@ public class DisplayActivity extends Activity {
         } catch (Throwable t) { /* ignore */ }
         if (refreshRunnable != null) {
             refreshHandler.removeCallbacks(refreshRunnable);
+            logD("onPause: refresh timer cancelled (fetchInProgress=" + fetchInProgress + ")");
         }
         if (pendingSleepRunnable != null) {
             refreshHandler.removeCallbacks(pendingSleepRunnable);
@@ -582,6 +597,7 @@ public class DisplayActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        logD("onDestroy pid=" + android.os.Process.myPid());
         cancelConnectivityWait();
         // Safety net: always restore screen timeout in case the app dies before onResume
         try {
@@ -766,7 +782,8 @@ public class DisplayActivity extends Activity {
             out.close();
             logD("screensaver written: " + path);
         } catch (Throwable t) {
-            logW("screensaver write failed: " + t);
+            logW("screensaver write failed: " + path + " — " + t
+                    + " (dir exists=" + new File(dirPath).exists() + ")");
         }
     }
 
