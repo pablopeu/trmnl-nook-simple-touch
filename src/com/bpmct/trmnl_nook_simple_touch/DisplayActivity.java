@@ -1406,6 +1406,16 @@ public class DisplayActivity extends Activity {
 
 
     /** Restore dialog to Battery / Next / Settings / Sleep. */
+    private void applyMenuLayoutParams() {
+        if (menuLayout == null) return;
+        FrameLayout.LayoutParams p = new FrameLayout.LayoutParams(
+                480,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER);
+        menuLayout.setLayoutParams(p);
+        logD("applyMenuLayoutParams: set 480 caller=" + Thread.currentThread().getStackTrace()[3].getMethodName());
+    }
+
     private void showMenuNormal() {
         if (loadingStatusView != null) loadingStatusView.setVisibility(View.GONE);
         if (batteryView != null) batteryView.setVisibility(View.VISIBLE);
