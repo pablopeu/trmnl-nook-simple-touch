@@ -139,6 +139,12 @@ public class ShowcaseActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        // If showcase mode was disabled (e.g. user saved credentials via web app),
+        // finish this activity so DisplayActivity takes over cleanly.
+        if (!ApiPrefs.isShowcaseModeEnabled(this)) {
+            finish();
+            return;
+        }
         getWindow().addFlags(
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
