@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.13.2] - 2026-04-22
+
+### Fixed
+- **Wi-Fi recovery after connectivity timeout** - When a battery-powered Nook wakes from sleep and its Wi-Fi radio gets stuck in a bad reconnection state, the app now toggles Wi-Fi off/on (up to 2 attempts) before falling back to the no-wifi screen. Previously the device would show "Couldn't connect" and stay stuck until manually rebooted.
+
+---
+
 ## [v0.12.2] - 2026-03-29
 
 ### Fixed
