@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.bpmct.trmnl_nook_simple_touch"
-    android:versionCode="120499"
-    android:versionName="0.12.4" >
+    android:versionCode="130299"
+    android:versionName="0.13.2" >
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -45,6 +45,16 @@
             android:name=".GiftModeSettingsActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:label="Gift Mode Settings"
+            android:theme="@style/FullscreenTheme" />
+        <activity
+            android:name=".ShowcaseSettingsActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:label="Showcase Settings"
+            android:theme="@style/FullscreenTheme" />
+        <activity
+            android:name=".ShowcaseActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:label="Showcase"
             android:theme="@style/FullscreenTheme" />
     </application>
 

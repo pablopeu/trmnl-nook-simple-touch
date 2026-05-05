@@ -48,7 +48,7 @@ final class TrmnlApiResponseParser {
 
     private TrmnlApiResponseParser() {}
 
-    static Result parseAndMaybeFetchImage(Context ctx, String jsonText, Logger log) {
+    static Result parseAndMaybeFetchImage(Context ctx, String jsonText, String apiRequestUrl, Logger log) {
         try {
             JSONObject obj = new JSONObject(jsonText);
             int status = obj.optInt("status", -1);
@@ -65,6 +65,11 @@ final class TrmnlApiResponseParser {
                 return new Result(jsonText);
             }
             if (log != null) log.logD("api image_url: " + imageUrl);
+            String rewrittenImageUrl = rewriteImageUrlScheme(imageUrl, apiRequestUrl);
+            if (!rewrittenImageUrl.equals(imageUrl)) {
+                if (log != null) log.logD("rewrote image_url scheme: " + rewrittenImageUrl);
+                imageUrl = rewrittenImageUrl;
+            }
 
             // Log a decoded URL for readability, but use the encoded URL for fetch.
             try {
@@ -115,6 +120,23 @@ final class TrmnlApiResponseParser {
             if (log != null) log.logW("response parse failed: " + t);
             return new Result(jsonText);
         }
+    }
+
+    private static String rewriteImageUrlScheme(String imageUrl, String apiRequestUrl) {
+        if (imageUrl == null || apiRequestUrl == null) {
+            return imageUrl;
+        }
+        int apiSep = apiRequestUrl.indexOf("://");
+        int imageSep = imageUrl.indexOf("://");
+        if (apiSep <= 0 || imageSep <= 0) {
+            return imageUrl;
+        }
+        String apiScheme = apiRequestUrl.substring(0, apiSep);
+        String imageScheme = imageUrl.substring(0, imageSep);
+        if (apiScheme.equalsIgnoreCase(imageScheme)) {
+            return imageUrl;
+        }
+        return apiScheme + imageUrl.substring(imageSep);
     }
 
     private static Bitmap rotate90(Bitmap src) {
