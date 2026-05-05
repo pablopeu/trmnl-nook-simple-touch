@@ -2100,6 +2100,7 @@ public class DisplayActivity extends Activity {
                             TrmnlApiResponseParser.Result r = TrmnlApiResponseParser.parseAndMaybeFetchImage(
                                     aFinal.getApplicationContext(),
                                     bcResult,
+                                    httpsUrl,
                                     new TrmnlApiResponseParser.Logger() {
                                         public void logD(String msg) { aFinal.logD(msg); }
                                         public void logW(String msg) { aFinal.logW(msg); }

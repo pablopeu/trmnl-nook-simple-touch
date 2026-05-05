@@ -590,7 +590,7 @@ public class ShowcaseActivity extends Activity {
                     public void logW(String msg) { android.util.Log.w(TAG, "[cell" + cellIdx + "] " + msg); }
                 };
                 TrmnlApiResponseParser.Result parsed =
-                        TrmnlApiResponseParser.parseAndMaybeFetchImage(activity, jsonText, logger);
+                        TrmnlApiResponseParser.parseAndMaybeFetchImage(activity, jsonText, apiUrl, logger);
                 if (parsed.showImage && parsed.bitmap != null) result.bitmap = parsed.bitmap;
                 else result.error = "No image";
             } catch (Throwable t) {
