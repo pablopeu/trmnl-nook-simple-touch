@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.14.0] - 2026-05-05
+
+### Fixed
+- **Rare stuck fetching state** - The app could get permanently stuck showing "Fetching..." after a network hiccup. Added a fetch watchdog that cancels the request and retries on the next cycle.
+- **Wi-Fi recovery after connectivity timeout** - When Wi-Fi gets stuck in a bad reconnection state, the app now toggles Wi-Fi off/on before falling back to the no-wifi screen.
+
+### Changed
+- **Connectivity timeout reduced from 30s to 5s** - Faster recovery when Wi-Fi is unavailable.
+- **Image URL scheme rewritten to match API request** - If the API is accessed over HTTP, the image URL is automatically rewritten to match, fixing self-hosted setups.
+- **Silent fetch for showcase cells** - Showcase cells now fetch in the background without flashing status text.
+
+---
+
 ## [v0.13.2] - 2026-04-22
 
 ### Fixed
