@@ -150,7 +150,7 @@ public class BouncyCastleHttpClient {
             String msg = "TLS-TEST SUCCESS to " + host + ":" + port
                     + " handshake=" + elapsed + "ms total=" + total + "ms";
             Log.i(TAG, msg);
-            FileLogger.i(TAG, msg);
+            FileLogger.d(TAG, msg);
 
             try { socket.close(); } catch (Exception ignored) {}
             return msg;
