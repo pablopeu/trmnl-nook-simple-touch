@@ -201,12 +201,15 @@ public class BouncyCastleHttpClient {
         }
         
         Log.d(TAG, "BC connecting to " + host + ":" + port + path);
-        
+
         // Create socket with connection timeout
+        long t0 = System.currentTimeMillis();
         Socket socket = new Socket();
         socket.connect(new java.net.InetSocketAddress(host, port), 20000);
         socket.setSoTimeout(20000);
-        
+        long t1 = System.currentTimeMillis();
+        Log.d(TAG, "BC TCP connected in " + (t1 - t0) + "ms");
+
         try {
             // Create TLS client protocol (SpongyCastle 1.58 uses 2-arg constructor)
             TlsClientProtocol tlsProtocol = new TlsClientProtocol(
@@ -219,10 +222,27 @@ public class BouncyCastleHttpClient {
             if (tm == null && !allowSelfSigned) {
                 return "Error: CA bundle not available (res/raw/ca_bundle.pem)";
             }
+            long t2 = System.currentTimeMillis();
             DefaultTlsClient tlsClient = createTlsClient(host, tm, allowSelfSigned);
+            long t3 = System.currentTimeMillis();
+            Log.d(TAG, "BC createTlsClient in " + (t3 - t2) + "ms");
 
             // Connect
-            tlsProtocol.connect(tlsClient);
+            Log.d(TAG, "BC starting TLS handshake...");
+            long t4 = System.currentTimeMillis();
+            try {
+                tlsProtocol.connect(tlsClient);
+                long t5 = System.currentTimeMillis();
+                Log.d(TAG, "BC TLS handshake completed in " + (t5 - t4) + "ms (total " + (t5 - t0) + "ms since socket connect)");
+            } catch (Exception connectEx) {
+                long t5 = System.currentTimeMillis();
+                String exDetail = connectEx.getClass().getName() + ": " + connectEx.getMessage();
+                Log.e(TAG, "BC TLS handshake FAILED after " + (t5 - t4) + "ms: " + exDetail);
+                java.io.StringWriter sw = new java.io.StringWriter();
+                connectEx.printStackTrace(new java.io.PrintWriter(sw));
+                Log.e(TAG, "BC TLS failure stack trace:\n" + sw.toString());
+                throw connectEx;
+            }
             
             Log.d(TAG, "BC TLS handshake successful");
             
