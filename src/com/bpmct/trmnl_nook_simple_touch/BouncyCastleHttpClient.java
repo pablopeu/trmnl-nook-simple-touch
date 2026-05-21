@@ -751,6 +751,15 @@ public class BouncyCastleHttpClient {
                 return ProtocolVersion.TLSv12;
             }
 
+            // Many TLS-terminating proxies (including ngrok's edge) reject
+            // ClientHello messages whose record-layer version is TLS 1.2.
+            // TLS 1.0 at the record layer is the recommended value for maximum
+            // compatibility — the actual negotiated version is in the
+            // ClientHello body (TLS 1.2, set by getClientVersion above).
+            public ProtocolVersion getClientHelloRecordLayerVersion() {
+                return ProtocolVersion.TLSv10;
+            }
+
             public int[] getCipherSuites() {
                 return new int[] {
                         // Modern GCM suites (preferred)
@@ -780,6 +789,11 @@ public class BouncyCastleHttpClient {
             public Hashtable getClientExtensions() throws java.io.IOException {
                 Hashtable extensions = super.getClientExtensions();
                 extensions = TlsExtensionsUtils.ensureExtensionsInitialised(extensions);
+
+                // Remove encrypt_then_mac — ngrok edge proxies may reject
+                // ClientHello messages containing this extension when only
+                // AEAD cipher suites are offered.
+                extensions.remove(TlsExtensionsUtils.EXT_encrypt_then_mac);
 
                 // Add SNI (Server Name Indication) for modern hosts
                 if (hostname != null && hostname.length() > 0) {
