@@ -814,10 +814,9 @@ public class BouncyCastleHttpClient {
                 Hashtable extensions = super.getClientExtensions();
                 extensions = TlsExtensionsUtils.ensureExtensionsInitialised(extensions);
 
-                // Remove encrypt_then_mac — ngrok edge proxies may reject
-                // ClientHello messages containing this extension when only
-                // AEAD cipher suites are offered.
-                extensions.remove(TlsExtensionsUtils.EXT_encrypt_then_mac);
+                // Keep encrypt_then_mac — Go's crypto/tls requires it for CBC
+                // cipher suites (Lucky13 mitigation). Without it the server
+                // rejects CBC-only ClientHello with handshake_failure(40).
 
                 // Remove ec_point_formats — RFC 4492 extension that some
                 // modern TLS terminators (including ngrok) reject because
