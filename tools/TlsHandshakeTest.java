@@ -13,6 +13,13 @@ import javax.security.auth.x500.X500Principal;
 
 import org.spongycastle.tls.*;
 import org.spongycastle.tls.crypto.impl.bc.BcTlsCrypto;
+import org.spongycastle.tls.crypto.impl.bc.BcTlsECDH;
+import org.spongycastle.tls.crypto.impl.bc.BcTlsECDomain;
+import org.spongycastle.tls.crypto.TlsAgreement;
+import org.spongycastle.tls.crypto.TlsECConfig;
+import org.spongycastle.tls.crypto.TlsECDomain;
+import org.spongycastle.crypto.AsymmetricCipherKeyPair;
+import org.spongycastle.crypto.params.ECPublicKeyParameters;
 
 /**
  * Standalone TLS handshake test that replicates the exact BouncyCastle
@@ -98,10 +105,58 @@ public class TlsHandshakeTest {
         return (X509TrustManager) tmf.getTrustManagers()[0];
     }
 
+    // --- Pre-generated EC key support (same as BouncyCastleHttpClient) ---
+
+    static class PreGeneratedAgreement extends BcTlsECDH {
+        PreGeneratedAgreement(BcTlsECDomain domain, AsymmetricCipherKeyPair keyPair) {
+            super(domain);
+            this.localKeyPair = keyPair;
+        }
+        public byte[] generateEphemeral() throws java.io.IOException {
+            return this.domain.encodePublicKey(
+                    (ECPublicKeyParameters) this.localKeyPair.getPublic());
+        }
+    }
+
+    static class PreGeneratedDomain extends BcTlsECDomain {
+        private final AsymmetricCipherKeyPair preKeyPair;
+        PreGeneratedDomain(BcTlsCrypto crypto, TlsECConfig config,
+                          AsymmetricCipherKeyPair keyPair) {
+            super(crypto, config);
+            this.preKeyPair = keyPair;
+        }
+        public TlsAgreement createECDH() {
+            return new PreGeneratedAgreement(this, this.preKeyPair);
+        }
+    }
+
+    static class CachingBcTlsCrypto extends BcTlsCrypto {
+        private final AsymmetricCipherKeyPair preKeyPair;
+        CachingBcTlsCrypto(SecureRandom random, AsymmetricCipherKeyPair keyPair) {
+            super(random);
+            this.preKeyPair = keyPair;
+        }
+        public TlsECDomain createECDomain(TlsECConfig config) {
+            if (preKeyPair != null && config.getNamedGroup() == 23) {
+                return new PreGeneratedDomain(this, config, preKeyPair);
+            }
+            return super.createECDomain(config);
+        }
+    }
+
     private static DefaultTlsClient createTlsClient(final String hostname,
                                                      final X509TrustManager tm) {
         SecureRandom secureRandom = new SecureRandom();
-        final BcTlsCrypto crypto = new BcTlsCrypto(secureRandom);
+        final BcTlsCrypto baseCrypto = new BcTlsCrypto(secureRandom);
+
+        // Pre-generate P-256 EC key pair (same rationale as BouncyCastleHttpClient)
+        TlsECConfig ecConfig = new TlsECConfig();
+        ecConfig.setNamedGroup(23); // secp256r1 (P-256)
+        BcTlsECDomain tmpDomain = new BcTlsECDomain(baseCrypto, ecConfig);
+        final AsymmetricCipherKeyPair preKeyPair = tmpDomain.generateKeyPair();
+        System.out.println("Pre-generated P-256 EC key pair");
+
+        final BcTlsCrypto crypto = new CachingBcTlsCrypto(secureRandom, preKeyPair);
 
         return new DefaultTlsClient(crypto) {
             public ProtocolVersion getClientVersion() {

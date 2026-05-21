@@ -41,7 +41,14 @@ import org.spongycastle.tls.TlsServerCertificate;
 import org.spongycastle.tls.TlsExtensionsUtils;
 import org.spongycastle.tls.TlsKeyExchange;
 import org.spongycastle.tls.crypto.impl.bc.BcTlsCrypto;
+import org.spongycastle.tls.crypto.impl.bc.BcTlsECDH;
+import org.spongycastle.tls.crypto.impl.bc.BcTlsECDomain;
+import org.spongycastle.tls.crypto.TlsAgreement;
 import org.spongycastle.tls.crypto.TlsCertificate;
+import org.spongycastle.tls.crypto.TlsECConfig;
+import org.spongycastle.tls.crypto.TlsECDomain;
+import org.spongycastle.crypto.AsymmetricCipherKeyPair;
+import org.spongycastle.crypto.params.ECPublicKeyParameters;
 import org.spongycastle.asn1.ASN1InputStream;
 import org.spongycastle.asn1.ASN1OctetString;
 import org.spongycastle.asn1.ASN1Primitive;
@@ -821,9 +828,76 @@ public class BouncyCastleHttpClient {
         return false;
     }
     
+    /**
+     * BcTlsECDH subclass that uses a pre-generated EC key pair instead of
+     * calling domain.generateKeyPair() during the handshake. This skips
+     * the ~3s EC key generation on the 800MHz ARM11 CPU.
+     */
+    private static class PreGeneratedAgreement extends BcTlsECDH {
+        PreGeneratedAgreement(BcTlsECDomain domain, AsymmetricCipherKeyPair keyPair) {
+            super(domain);
+            this.localKeyPair = keyPair;
+        }
+
+        public byte[] generateEphemeral() throws java.io.IOException {
+            return this.domain.encodePublicKey(
+                    (ECPublicKeyParameters) this.localKeyPair.getPublic());
+        }
+    }
+
+    /** BcTlsECDomain subclass that creates pre-keyed agreements. */
+    private static class PreGeneratedDomain extends BcTlsECDomain {
+        private final AsymmetricCipherKeyPair preKeyPair;
+
+        PreGeneratedDomain(BcTlsCrypto crypto, TlsECConfig config,
+                          AsymmetricCipherKeyPair keyPair) {
+            super(crypto, config);
+            this.preKeyPair = keyPair;
+        }
+
+        public TlsAgreement createECDH() {
+            return new PreGeneratedAgreement(this, this.preKeyPair);
+        }
+    }
+
+    /**
+     * BcTlsCrypto subclass that intercepts createECDomain() to inject
+     * a pre-generated P-256 key pair, avoiding EC key generation during
+     * the TLS handshake.
+     */
+    private static class CachingBcTlsCrypto extends BcTlsCrypto {
+        private final AsymmetricCipherKeyPair preKeyPair;
+
+        CachingBcTlsCrypto(java.security.SecureRandom random,
+                          AsymmetricCipherKeyPair keyPair) {
+            super(random);
+            this.preKeyPair = keyPair;
+        }
+
+        public TlsECDomain createECDomain(TlsECConfig config) {
+            if (preKeyPair != null && config.getNamedGroup() == 23) {
+                return new PreGeneratedDomain(this, config, preKeyPair);
+            }
+            return super.createECDomain(config);
+        }
+    }
+
     private static DefaultTlsClient createTlsClient(final String hostname, final X509TrustManager tm, final boolean allowSelfSigned) {
-        SecureRandom secureRandom = new SecureRandom();
-        final BcTlsCrypto crypto = new BcTlsCrypto(secureRandom);
+        java.security.SecureRandom secureRandom = new java.security.SecureRandom();
+        final BcTlsCrypto baseCrypto = new BcTlsCrypto(secureRandom);
+
+        // Pre-generate a P-256 EC key pair now, before the ClientHello is
+        // sent. This ~3s operation is invisible to the server because the
+        // server's idle timer doesn't start until it receives ClientHello.
+        // Without this, ECDHE key gen on the 800MHz ARM11 exceeds ngrok's
+        // ~3s server-side handshake timeout.
+        TlsECConfig ecConfig = new TlsECConfig();
+        ecConfig.setNamedGroup(23); // secp256r1 (P-256)
+        BcTlsECDomain tmpDomain = new BcTlsECDomain(baseCrypto, ecConfig);
+        final AsymmetricCipherKeyPair preKeyPair = tmpDomain.generateKeyPair();
+        Log.d(TAG, "BC pre-generated EC key pair for P-256");
+
+        final BcTlsCrypto crypto = new CachingBcTlsCrypto(secureRandom, preKeyPair);
 
         return new DefaultTlsClient(crypto) {
             public ProtocolVersion getClientVersion() {
