@@ -39,6 +39,7 @@ import org.spongycastle.tls.TlsCredentials;
 import org.spongycastle.tls.TlsFatalAlert;
 import org.spongycastle.tls.TlsServerCertificate;
 import org.spongycastle.tls.TlsExtensionsUtils;
+import org.spongycastle.tls.TlsKeyExchange;
 import org.spongycastle.tls.crypto.impl.bc.BcTlsCrypto;
 import org.spongycastle.tls.crypto.TlsCertificate;
 import org.spongycastle.asn1.ASN1InputStream;
@@ -783,21 +784,26 @@ public class BouncyCastleHttpClient {
 
             public int[] getCipherSuites() {
                 return new int[] {
-                        // Modern GCM suites (preferred)
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
                         CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
                         CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-                        // CBC fallback suites
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
                         CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
                         CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
-                        // DHE fallback (non-EC key exchange) for servers that don't
-                        // support ECDHE or have restrictive EC curve requirements
-                        CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
-                        CipherSuite.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
                 };
+            }
+
+            public void notifySelectedCipherSuite(int selectedCipherSuite) {
+                super.notifySelectedCipherSuite(selectedCipherSuite);
+                Log.d(TAG, "BC negotiated cipher suite: 0x" + Integer.toHexString(selectedCipherSuite));
+            }
+
+            public TlsKeyExchange getKeyExchange() throws java.io.IOException {
+                TlsKeyExchange kex = super.getKeyExchange();
+                Log.d(TAG, "BC key exchange: " + kex.getClass().getSimpleName() + " for cipher 0x" + Integer.toHexString(selectedCipherSuite));
+                return kex;
             }
 
             // Disable OCSP stapling request — ngrok and other edge proxies
