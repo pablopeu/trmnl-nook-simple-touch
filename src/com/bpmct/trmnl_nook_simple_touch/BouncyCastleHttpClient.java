@@ -821,6 +821,10 @@ public class BouncyCastleHttpClient {
                 // point format negotiation is irrelevant for ECDHE.
                 extensions.remove(TlsECCUtils.EXT_ec_point_formats);
 
+                // Remove extended_master_secret (RFC 7627) — ngrok edge
+                // proxies may reject ClientHello containing this extension.
+                extensions.remove(TlsExtensionsUtils.EXT_extended_master_secret);
+
                 // Debug: log which extensions are present
                 StringBuilder extLog = new StringBuilder("BC extensions: [");
                 java.util.Enumeration keys = extensions.keys();
@@ -840,9 +844,6 @@ public class BouncyCastleHttpClient {
                     TlsExtensionsUtils.addServerNameExtension(
                             extensions, new ServerNameList(serverNames));
                 }
-
-                // Advertise extended master secret support
-                TlsExtensionsUtils.addExtendedMasterSecretExtension(extensions);
 
                 return extensions;
             }
