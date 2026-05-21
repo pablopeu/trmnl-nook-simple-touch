@@ -132,6 +132,7 @@ public class BouncyCastleHttpClient {
             Socket socket = new Socket();
             socket.connect(new java.net.InetSocketAddress(host, port > 0 ? port : 443), 10000);
             socket.setSoTimeout(10000);
+            socket.setTcpNoDelay(true);
             Log.d(TAG, "TLS-TEST TCP connected to " + host + ":" + port + " in " + (System.currentTimeMillis() - t0) + "ms");
 
             TlsClientProtocol tlsProtocol = new TlsClientProtocol(
@@ -264,6 +265,7 @@ public class BouncyCastleHttpClient {
         Socket socket = new Socket();
         socket.connect(new java.net.InetSocketAddress(host, port), 20000);
         socket.setSoTimeout(20000);
+        socket.setTcpNoDelay(true);
         long t1 = System.currentTimeMillis();
         Log.d(TAG, "BC TCP connected in " + (t1 - t0) + "ms");
 
@@ -440,6 +442,7 @@ public class BouncyCastleHttpClient {
         Socket socket = new Socket();
         socket.connect(new java.net.InetSocketAddress(host, port), 20000);
         socket.setSoTimeout(20000);
+        socket.setTcpNoDelay(true);
         try {
             TlsClientProtocol tlsProtocol = new TlsClientProtocol(
                     socket.getInputStream(), socket.getOutputStream());
@@ -552,6 +555,7 @@ public class BouncyCastleHttpClient {
         Socket socket = new Socket();
         socket.connect(new java.net.InetSocketAddress(host, port), 20000);
         socket.setSoTimeout(20000);
+        socket.setTcpNoDelay(true);
         try {
             OutputStream out = socket.getOutputStream();
             InputStream in = socket.getInputStream();
@@ -677,6 +681,7 @@ public class BouncyCastleHttpClient {
         Socket socket = new Socket();
         socket.connect(new java.net.InetSocketAddress(host, port), 20000);
         socket.setSoTimeout(20000);
+        socket.setTcpNoDelay(true);
         try {
             OutputStream out = socket.getOutputStream();
             InputStream in = socket.getInputStream();
@@ -879,11 +884,20 @@ public class BouncyCastleHttpClient {
 
                 // Keep encrypt_then_mac, ec_point_formats, supported_groups,
                 // and signature_algorithms — Go's crypto/tls requires all four
-                // for ECDHE-ECDSA CBC cipher suites.
+                // for ECDHE-ECDSA cipher suites.
 
                 // Remove extended_master_secret (RFC 7627) — ngrok edge
                 // proxies may reject ClientHello containing this extension.
                 extensions.remove(TlsExtensionsUtils.EXT_extended_master_secret);
+
+                // Limit supported EC curves to P-256 (secp256r1=23) only.
+                // P-384 and P-521 key generation on the 800MHz ARM11 CPU
+                // exceeds ngrok's ~3s server-side handshake timeout.
+                // P-256 provides 128-bit security and is universally supported.
+                extensions.remove(TlsExtensionsUtils.EXT_supported_groups);
+                Vector curveList = new Vector();
+                curveList.addElement(new Integer(23));
+                TlsExtensionsUtils.addSupportedGroupsExtension(extensions, curveList);
 
                 // Add SNI (Server Name Indication) for modern hosts
                 if (hostname != null && hostname.length() > 0) {
