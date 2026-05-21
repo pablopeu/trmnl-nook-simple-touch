@@ -25,6 +25,7 @@ import javax.security.auth.x500.X500Principal;
 
 import org.spongycastle.tls.AlertDescription;
 import org.spongycastle.tls.CertificateRequest;
+import org.spongycastle.tls.CertificateStatusRequest;
 import org.spongycastle.tls.CipherSuite;
 import org.spongycastle.tls.DefaultTlsClient;
 import org.spongycastle.tls.NameType;
@@ -752,15 +753,28 @@ public class BouncyCastleHttpClient {
 
             public int[] getCipherSuites() {
                 return new int[] {
-                        // ECDSA certs (Cloudflare, Let's Encrypt ECDSA)
+                        // Modern GCM suites (preferred)
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+                        // CBC fallback suites
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
-                        // RSA certs (usetrmnl.com)
-                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+                        // DHE fallback (non-EC key exchange) for servers that don't
+                        // support ECDHE or have restrictive EC curve requirements
+                        CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
+                        CipherSuite.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
                 };
+            }
+
+            // Disable OCSP stapling request — ngrok and other edge proxies
+            // may reject ClientHello messages that include the status_request
+            // extension with handshake_failure(40).
+            protected CertificateStatusRequest getCertificateStatusRequest() {
+                return null;
             }
 
             public Hashtable getClientExtensions() throws java.io.IOException {

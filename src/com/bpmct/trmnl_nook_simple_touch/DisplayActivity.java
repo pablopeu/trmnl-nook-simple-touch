@@ -2368,6 +2368,8 @@ public class DisplayActivity extends Activity {
         Hashtable headers = new Hashtable();
         headers.put("User-Agent", "TRMNL-Nook/1.0 (Android 2.1)");
         headers.put("Accept", "application/json");
+        // Bypass ngrok free-tier interstitial warning page
+        headers.put("ngrok-skip-browser-warning", "1");
         if (apiId != null) {
             headers.put("ID", apiId);
         }
@@ -2388,6 +2390,8 @@ public class DisplayActivity extends Activity {
         Hashtable headers = new Hashtable();
         headers.put("User-Agent", "TRMNL-Nook/1.0 (Android 2.1)");
         headers.put("Accept", "image/*");
+        // Bypass ngrok free-tier interstitial warning page
+        headers.put("ngrok-skip-browser-warning", "1");
         return headers;
     }
 }

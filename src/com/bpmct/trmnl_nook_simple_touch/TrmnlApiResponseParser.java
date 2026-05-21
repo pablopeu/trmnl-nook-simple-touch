@@ -81,6 +81,7 @@ final class TrmnlApiResponseParser {
             Hashtable headers = new Hashtable();
             headers.put("User-Agent", "TRMNL-Nook/1.0 (Android 2.1)");
             headers.put("Accept", "image/*");
+            headers.put("ngrok-skip-browser-warning", "1");
 
             byte[] imageBytes = null;
             for (int attempt = 1; attempt <= 2; attempt++) {
