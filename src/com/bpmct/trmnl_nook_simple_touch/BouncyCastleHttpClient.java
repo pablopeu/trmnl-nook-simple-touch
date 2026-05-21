@@ -784,16 +784,11 @@ public class BouncyCastleHttpClient {
 
             public int[] getCipherSuites() {
                 return new int[] {
-                        // Try CBC first — some TLS terminators have issues
-                        // with SpongyCastle's GCM implementation.
+                        // Offer CBC only — GCM cipher suites consistently fail
+                        // at ChangeCipherSpec when SpongyCastle 1.58 negotiates
+                        // them with Go's crypto/tls (ngrok edge).
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
-                        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-                        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
-                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
                 };
             }
 
@@ -832,11 +827,6 @@ public class BouncyCastleHttpClient {
                 // Remove extended_master_secret (RFC 7627) — ngrok edge
                 // proxies may reject ClientHello containing this extension.
                 extensions.remove(TlsExtensionsUtils.EXT_extended_master_secret);
-
-                // Remove supported_groups — let server use default curves.
-                // Go's crypto/tls may reject ClientHello containing this
-                // extension alongside ECDHE cipher suites with unexpected groups.
-                extensions.remove(TlsExtensionsUtils.EXT_supported_groups);
 
                 // Add SNI (Server Name Indication) for modern hosts
                 if (hostname != null && hostname.length() > 0) {
