@@ -848,6 +848,10 @@ public class BouncyCastleHttpClient {
                         // selecting ChaCha20 is to not offer it.
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                        // Include ECDHE_RSA CBC variants for servers with RSA
+                        // certificates (some ngrok tunnels use RSA certs).
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
                 };
             }
 
@@ -873,14 +877,9 @@ public class BouncyCastleHttpClient {
                 Hashtable extensions = super.getClientExtensions();
                 extensions = TlsExtensionsUtils.ensureExtensionsInitialised(extensions);
 
-                // Keep encrypt_then_mac — Go's crypto/tls requires it for CBC
-                // cipher suites (Lucky13 mitigation). Without it the server
-                // rejects CBC-only ClientHello with handshake_failure(40).
-
-                // Remove ec_point_formats — RFC 4492 extension that some
-                // modern TLS terminators (including ngrok) reject because
-                // point format negotiation is irrelevant for ECDHE.
-                extensions.remove(TlsECCUtils.EXT_ec_point_formats);
+                // Keep encrypt_then_mac, ec_point_formats, supported_groups,
+                // and signature_algorithms — Go's crypto/tls requires all four
+                // for ECDHE-ECDSA CBC cipher suites.
 
                 // Remove extended_master_secret (RFC 7627) — ngrok edge
                 // proxies may reject ClientHello containing this extension.
