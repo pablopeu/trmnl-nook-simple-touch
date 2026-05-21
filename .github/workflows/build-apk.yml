@@ -67,6 +67,15 @@ jobs:
           if ! git diff --quiet AndroidManifest.xml; then
             git add AndroidManifest.xml
             git commit -m "Bump version to ${GITHUB_REF_NAME#v}"
+            # Rebase onto latest main to avoid push races.
+            # When a developer pushes code + tag simultaneously,
+            # the tag checkout may lag behind the pushed main ref.
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "Rebase failed; aborting." >&2
+              git rebase --abort
+              exit 1
+            fi
             git push origin HEAD:main
           fi
       - name: Move tag to version-bumped commit
