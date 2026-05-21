@@ -784,9 +784,15 @@ public class BouncyCastleHttpClient {
 
             public int[] getCipherSuites() {
                 return new int[] {
-                        // Offer CBC only — GCM cipher suites consistently fail
-                        // at ChangeCipherSpec when SpongyCastle 1.58 negotiates
-                        // them with Go's crypto/tls (ngrok edge).
+                        // Prefer ChaCha20-Poly1305. It uses a different AEAD nonce
+                        // construction (RFC 7905, nonce_mode=2, no explicit nonce) and
+                        // a stream cipher (ChaCha7539) instead of GCM block mode.
+                        // This avoids the GCM incompatibility between SpongyCastle 1.58
+                        // and Go's crypto/tls (which causes Broken pipe at CCS).
+                        CipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+                        // Fall back to CBC with all default extensions. Go's crypto/tls
+                        // requires encrypt_then_mac, supported_groups, signature_algorithms,
+                        // and ec_point_formats for ECDHE-ECDSA CBC suites.
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
                 };
@@ -814,18 +820,10 @@ public class BouncyCastleHttpClient {
                 Hashtable extensions = super.getClientExtensions();
                 extensions = TlsExtensionsUtils.ensureExtensionsInitialised(extensions);
 
-                // Keep encrypt_then_mac — Go's crypto/tls requires it for CBC
-                // cipher suites (Lucky13 mitigation). Without it the server
-                // rejects CBC-only ClientHello with handshake_failure(40).
-
-                // Remove ec_point_formats — RFC 4492 extension that some
-                // modern TLS terminators (including ngrok) reject because
-                // point format negotiation is irrelevant for ECDHE.
-                extensions.remove(TlsECCUtils.EXT_ec_point_formats);
-
-                // Remove extended_master_secret (RFC 7627) — ngrok edge
-                // proxies may reject ClientHello containing this extension.
-                extensions.remove(TlsExtensionsUtils.EXT_extended_master_secret);
+                // Keep all default extensions (encrypt_then_mac, extended_master_secret,
+                // ec_point_formats, supported_groups, signature_algorithms).
+                // Only OCSP stapling (status_request) is disabled via
+                // getCertificateStatusRequest() returning null above.
 
                 // Add SNI (Server Name Indication) for modern hosts
                 if (hostname != null && hostname.length() > 0) {
