@@ -784,14 +784,16 @@ public class BouncyCastleHttpClient {
 
             public int[] getCipherSuites() {
                 return new int[] {
-                        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-                        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+                        // Try CBC first — some TLS terminators have issues
+                        // with SpongyCastle's GCM implementation.
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
                         CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
                         CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
                 };
             }
 
@@ -831,7 +833,20 @@ public class BouncyCastleHttpClient {
                 // proxies may reject ClientHello containing this extension.
                 extensions.remove(TlsExtensionsUtils.EXT_extended_master_secret);
 
-                // Debug: log which extensions are present
+                // Remove supported_groups — let server use default curves.
+                // Go's crypto/tls may reject ClientHello containing this
+                // extension alongside ECDHE cipher suites with unexpected groups.
+                extensions.remove(TlsExtensionsUtils.EXT_supported_groups);
+
+                // Add SNI (Server Name Indication) for modern hosts
+                if (hostname != null && hostname.length() > 0) {
+                    Vector serverNames = new Vector();
+                    serverNames.addElement(new ServerName(NameType.host_name, hostname));
+                    TlsExtensionsUtils.addServerNameExtension(
+                            extensions, new ServerNameList(serverNames));
+                }
+
+                // Debug: log which extensions are present (after all changes)
                 StringBuilder extLog = new StringBuilder("BC extensions: [");
                 java.util.Enumeration keys = extensions.keys();
                 boolean first = true;
@@ -842,14 +857,6 @@ public class BouncyCastleHttpClient {
                 }
                 extLog.append("]");
                 Log.d(TAG, extLog.toString());
-
-                // Add SNI (Server Name Indication) for modern hosts
-                if (hostname != null && hostname.length() > 0) {
-                    Vector serverNames = new Vector();
-                    serverNames.addElement(new ServerName(NameType.host_name, hostname));
-                    TlsExtensionsUtils.addServerNameExtension(
-                            extensions, new ServerNameList(serverNames));
-                }
 
                 return extensions;
             }
