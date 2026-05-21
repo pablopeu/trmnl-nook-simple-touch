@@ -133,7 +133,11 @@ public class DisplayActivity extends Activity {
 
         // Initialize file logging from saved preference
         FileLogger.setEnabled(ApiPrefs.isFileLoggingEnabled(this));
-        logD("onCreate pid=" + android.os.Process.myPid()
+        String versionName = "unknown";
+        try {
+            versionName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Throwable t) { /* ignore */ }
+        logD("v" + versionName + " onCreate pid=" + android.os.Process.myPid()
                 + " allow_sleep=" + ApiPrefs.isAllowSleep(this)
                 + " super_sleep=" + ApiPrefs.isSuperSleep(this)
                 + " auto_disable_wifi=" + ApiPrefs.isAutoDisableWifi(this)

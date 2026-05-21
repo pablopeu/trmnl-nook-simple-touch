@@ -31,6 +31,7 @@ import org.spongycastle.tls.DefaultTlsClient;
 import org.spongycastle.tls.NameType;
 import org.spongycastle.tls.ProtocolVersion;
 import org.spongycastle.tls.ServerName;
+import org.spongycastle.tls.TlsECCUtils;
 import org.spongycastle.tls.ServerNameList;
 import org.spongycastle.tls.TlsAuthentication;
 import org.spongycastle.tls.TlsClientProtocol;
@@ -794,6 +795,23 @@ public class BouncyCastleHttpClient {
                 // ClientHello messages containing this extension when only
                 // AEAD cipher suites are offered.
                 extensions.remove(TlsExtensionsUtils.EXT_encrypt_then_mac);
+
+                // Remove ec_point_formats — RFC 4492 extension that some
+                // modern TLS terminators (including ngrok) reject because
+                // point format negotiation is irrelevant for ECDHE.
+                extensions.remove(TlsECCUtils.EXT_ec_point_formats);
+
+                // Debug: log which extensions are present
+                StringBuilder extLog = new StringBuilder("BC extensions: [");
+                java.util.Enumeration keys = extensions.keys();
+                boolean first = true;
+                while (keys.hasMoreElements()) {
+                    if (!first) extLog.append(", ");
+                    first = false;
+                    extLog.append(keys.nextElement());
+                }
+                extLog.append("]");
+                Log.d(TAG, extLog.toString());
 
                 // Add SNI (Server Name Indication) for modern hosts
                 if (hostname != null && hostname.length() > 0) {
