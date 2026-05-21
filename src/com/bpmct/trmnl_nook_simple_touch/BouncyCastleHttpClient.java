@@ -322,9 +322,10 @@ public class BouncyCastleHttpClient {
             PrintWriter writer = new PrintWriter(tlsOut, true);
             writer.print("GET " + path + " HTTP/1.1\r\n");
             writeHeaders(writer, headers, host, port, true);
+            writer.print("bypass-tunnel-reminder: 1\r\n");
             writer.print("\r\n");
             writer.flush();
-            
+
             // Read HTTP response
             String statusLine = readAsciiLine(tlsIn);
             if (statusLine == null) {
@@ -474,6 +475,7 @@ public class BouncyCastleHttpClient {
             PrintWriter writer = new PrintWriter(tlsOut, true);
             writer.print("GET " + path + " HTTP/1.1\r\n");
             writeHeaders(writer, headers, host, port, true);
+            writer.print("bypass-tunnel-reminder: 1\r\n");
             writer.print("\r\n");
             writer.flush();
 
@@ -572,6 +574,7 @@ public class BouncyCastleHttpClient {
             PrintWriter writer = new PrintWriter(out, true);
             writer.print("GET " + path + " HTTP/1.1\r\n");
             writeHeaders(writer, headers, host, port, false);
+            writer.print("bypass-tunnel-reminder: 1\r\n");
             writer.print("\r\n");
             writer.flush();
 
@@ -717,6 +720,7 @@ public class BouncyCastleHttpClient {
             PrintWriter writer = new PrintWriter(out, true);
             writer.print("GET " + path + " HTTP/1.1\r\n");
             writeHeaders(writer, headers, host, port, false);
+            writer.print("bypass-tunnel-reminder: 1\r\n");
             writer.print("\r\n");
             writer.flush();
 
