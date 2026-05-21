@@ -241,7 +241,7 @@ public class BouncyCastleHttpClient {
         if (!tlsTestDone) {
             tlsTestDone = true;
             Log.i(TAG, "TLS-TEST running one-shot connectivity check...");
-            FileLogger.i(TAG, "TLS-TEST running one-shot connectivity check...");
+            FileLogger.d(TAG, "TLS-TEST running one-shot connectivity check...");
             testTlsHandshake(context, "usetrmnl.com", 443);
         }
 
