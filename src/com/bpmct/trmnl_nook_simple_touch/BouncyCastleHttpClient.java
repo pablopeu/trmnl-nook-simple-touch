@@ -73,6 +73,7 @@ public class BouncyCastleHttpClient {
     private static final boolean bcAvailable = true;
     private static X509TrustManager trustManager = null;
     private static boolean tlsTestDone = false;
+    private static boolean ltBypassInProgress = false;
 
     /** Log request/response details, omitting sensitive headers */
     private static void logRequest(String method, String url, Hashtable headers) {
@@ -662,6 +663,25 @@ public class BouncyCastleHttpClient {
             String body = new String(bodyBytes.toByteArray(), "UTF-8");
 
             logResponse(url, statusCode, reason, body.length(), body);
+
+            // Auto-bypass localtunnel anti-abuse verification (511)
+            if (statusCode == 511 && !ltBypassInProgress) {
+                String endpointIp = extractLocaltunnelEndpointIp(body);
+                if (endpointIp != null && endpointIp.length() > 0) {
+                    Log.d(TAG, "LT 511 verification, endpoint IP: " + endpointIp);
+                    try { socket.close(); } catch (Exception ignored) {}
+                    boolean ok = submitLocaltunnelBypass(host, port, endpointIp);
+                    if (ok) {
+                        Log.d(TAG, "LT bypass OK, retrying original request");
+                        ltBypassInProgress = true;
+                        String retryResult = getHttpImpl(context, url, headers);
+                        ltBypassInProgress = false;
+                        return retryResult;
+                    }
+                    Log.w(TAG, "LT bypass failed, returning 511 body");
+                }
+            }
+
             return body;
         } finally {
             try { socket.close(); } catch (Exception e) {}
@@ -725,6 +745,34 @@ public class BouncyCastleHttpClient {
                 }
             }
 
+            // Auto-bypass localtunnel anti-abuse verification (511) for bytes requests
+            if (statusCode == 511 && !ltBypassInProgress) {
+                ByteArrayOutputStream verifyBody = new ByteArrayOutputStream();
+                byte[] vbuf = new byte[8192];
+                int vn;
+                while ((vn = in.read(vbuf)) > 0) {
+                    verifyBody.write(vbuf, 0, vn);
+                }
+                String body = new String(verifyBody.toByteArray(), "UTF-8");
+                logResponse(url, statusCode, "Network Authentication Required", body.length(), body);
+
+                String endpointIp = extractLocaltunnelEndpointIp(body);
+                if (endpointIp != null && endpointIp.length() > 0) {
+                    Log.d(TAG, "LT 511 verification (bytes), endpoint IP: " + endpointIp);
+                    try { socket.close(); } catch (Exception ignored) {}
+                    boolean ok = submitLocaltunnelBypass(host, port, endpointIp);
+                    if (ok) {
+                        Log.d(TAG, "LT bypass OK, retrying bytes request");
+                        ltBypassInProgress = true;
+                        byte[] retryResult = getHttpBytesImpl(context, url, headers);
+                        ltBypassInProgress = false;
+                        return retryResult;
+                    }
+                }
+                logResponseError(url, "HTTP 511 (bytes)");
+                return null;
+            }
+
             if (statusCode < 200 || statusCode >= 300) {
                 logResponseError(url, "HTTP " + statusCode + " (bytes)");
                 return null;
@@ -754,6 +802,74 @@ public class BouncyCastleHttpClient {
         } finally {
             try { socket.close(); } catch (Exception e) {}
         }
+    }
+
+    /**
+     * Extract the endpoint IP from a localtunnel 511 verification page.
+     * The page shows: <span id="endpoint-ip-text">190.31.130.231</span>
+     */
+    private static String extractLocaltunnelEndpointIp(String html) {
+        if (html == null) return null;
+        int idx = html.indexOf("endpoint-ip-text\">");
+        if (idx < 0) return null;
+        idx += "endpoint-ip-text\">".length();
+        int end = html.indexOf("</span>", idx);
+        if (end < 0) return null;
+        return html.substring(idx, end).trim();
+    }
+
+    /**
+     * Submit the localtunnel anti-abuse verification form.
+     * Sends a POST to / with the endpoint IP, which whitelists our public IP.
+     */
+    private static boolean submitLocaltunnelBypass(String host, int port, String endpointIp) {
+        // Try multiple parameter names that loca.lt might expect
+        String[] paramNames = { "endpoint_ip", "ip", "endpoint-ip" };
+        for (int i = 0; i < paramNames.length; i++) {
+            try {
+                Socket s = new Socket();
+                s.connect(new java.net.InetSocketAddress(host, port), 15000);
+                s.setSoTimeout(15000);
+                s.setTcpNoDelay(true);
+
+                OutputStream out = s.getOutputStream();
+                InputStream in = s.getInputStream();
+
+                String formBody = paramNames[i] + "=" + java.net.URLEncoder.encode(endpointIp, "UTF-8");
+                PrintWriter writer = new PrintWriter(out, true);
+                writer.print("POST / HTTP/1.1\r\n");
+                writer.print("Host: " + host + "\r\n");
+                writer.print("Content-Type: application/x-www-form-urlencoded\r\n");
+                writer.print("Content-Length: " + formBody.length() + "\r\n");
+                writer.print("Connection: close\r\n");
+                writer.print("\r\n");
+                writer.print(formBody);
+                writer.flush();
+
+                String statusLine = readAsciiLine(in);
+                Log.d(TAG, "LT bypass attempt " + (i + 1) + " (" + paramNames[i] + "): " + statusLine);
+                if (statusLine != null) {
+                    String[] parts = statusLine.split(" ");
+                    if (parts.length >= 2) {
+                        int code = Integer.parseInt(parts[1]);
+                        try { s.close(); } catch (Exception ignored) {}
+                        if (code >= 200 && code < 400) {
+                            Log.d(TAG, "LT bypass succeeded with param: " + paramNames[i]);
+                            return true;
+                        }
+                        // If we got a 302 (redirect), that's also success
+                        if (code == 302 || code == 301 || code == 303) {
+                            Log.d(TAG, "LT bypass succeeded (redirect) with param: " + paramNames[i]);
+                            return true;
+                        }
+                    }
+                }
+                try { s.close(); } catch (Exception ignored) {}
+            } catch (Exception e) {
+                Log.w(TAG, "LT bypass error (" + paramNames[i] + "): " + e.getMessage());
+            }
+        }
+        return false;
     }
 
     private static String readAsciiLine(InputStream in) throws IOException {
