@@ -65,6 +65,7 @@ public class BouncyCastleHttpClient {
     private static final String TAG = "BCHttpClient";
     private static final boolean bcAvailable = true;
     private static X509TrustManager trustManager = null;
+    private static boolean tlsTestDone = false;
 
     /** Log request/response details, omitting sensitive headers */
     private static void logRequest(String method, String url, Hashtable headers) {
@@ -116,6 +117,52 @@ public class BouncyCastleHttpClient {
 
     public static boolean isAvailable() {
         return bcAvailable;
+    }
+
+    /**
+     * Performs a raw TLS 1.2 handshake to the given host:port (no HTTP request)
+     * and logs success/failure. Used for debugging TLS connectivity.
+     */
+    public static String testTlsHandshake(Context context, String host, int port) {
+        if (host == null || host.length() == 0) {
+            return "no host";
+        }
+        long t0 = System.currentTimeMillis();
+        try {
+            Socket socket = new Socket();
+            socket.connect(new java.net.InetSocketAddress(host, port > 0 ? port : 443), 10000);
+            socket.setSoTimeout(10000);
+            Log.d(TAG, "TLS-TEST TCP connected to " + host + ":" + port + " in " + (System.currentTimeMillis() - t0) + "ms");
+
+            TlsClientProtocol tlsProtocol = new TlsClientProtocol(
+                    socket.getInputStream(), socket.getOutputStream());
+
+            boolean allowSelfSigned = context != null && ApiPrefs.isAllowSelfSignedCerts(context);
+            X509TrustManager tm = allowSelfSigned ? null : getTrustManager(context);
+
+            DefaultTlsClient tlsClient = createTlsClient(host, tm, allowSelfSigned);
+
+            long tHandshake = System.currentTimeMillis();
+            tlsProtocol.connect(tlsClient);
+            long elapsed = System.currentTimeMillis() - tHandshake;
+            long total = System.currentTimeMillis() - t0;
+
+            String msg = "TLS-TEST SUCCESS to " + host + ":" + port
+                    + " handshake=" + elapsed + "ms total=" + total + "ms";
+            Log.i(TAG, msg);
+            FileLogger.i(TAG, msg);
+
+            try { socket.close(); } catch (Exception ignored) {}
+            return msg;
+        } catch (Throwable t) {
+            long total = System.currentTimeMillis() - t0;
+            String msg = "TLS-TEST FAILED to " + host + ":" + port
+                    + " after " + total + "ms: " + t.getClass().getSimpleName()
+                    + ": " + t.getMessage();
+            Log.e(TAG, msg);
+            FileLogger.e(TAG, msg);
+            return msg;
+        }
     }
     
     /**
@@ -189,6 +236,15 @@ public class BouncyCastleHttpClient {
     }
     
     private static String getHttpsImpl(Context context, String url, Hashtable headers) throws Exception {
+        // One-shot TLS connectivity test against a known-good server to
+        // determine whether handshake failures are ngrok-specific or general.
+        if (!tlsTestDone) {
+            tlsTestDone = true;
+            Log.i(TAG, "TLS-TEST running one-shot connectivity check...");
+            FileLogger.i(TAG, "TLS-TEST running one-shot connectivity check...");
+            testTlsHandshake(context, "usetrmnl.com", 443);
+        }
+
         // Parse URL
         java.net.URL u = new java.net.URL(url);
         String host = u.getHost();
