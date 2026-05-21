@@ -840,16 +840,14 @@ public class BouncyCastleHttpClient {
 
             public int[] getCipherSuites() {
                 return new int[] {
-                        // Prefer CBC — these work with all Go crypto/tls servers
-                        // (including ngrok's edge) when encrypt_then_mac is offered.
+                        // Offer CBC only. SpongyCastle 1.58's ChaCha20-Poly1305
+                        // implements an older draft (explicit 8-byte AEAD nonce)
+                        // that is incompatible with Go crypto/tls (RFC 7905,
+                        // implicit nonce). Since the server chooses the cipher
+                        // suite, the only way to prevent Go servers (ngrok) from
+                        // selecting ChaCha20 is to not offer it.
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
                         CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
-                        // ChaCha20-Poly1305 as fallback. SpongyCastle 1.58 implements
-                        // an older draft with an explicit 8-byte AEAD nonce, while
-                        // Go's crypto/tls follows RFC 7905 (implicit nonce). This
-                        // causes Broken pipe at CCS with some Go TLS stacks (ngrok).
-                        // Kept as a fallback for servers that don't support CBC.
-                        CipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
                 };
             }
 
